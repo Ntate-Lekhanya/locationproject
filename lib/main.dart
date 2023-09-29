@@ -2,9 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 const double YOUR_DESTINATION_LAT = 37.7749; // Example latitude (e.g., San Francisco)
 const double YOUR_DESTINATION_LNG = -122.4194; // Example longitude
+const String GOOGLE_MAPS_API_KEY = 'AIzaSyDqUr9fg0_ClrzjYqguriPtrO53PJoSRlo"'; // Replace with your API key
 
 void main() => runApp(MyApp());
 
@@ -58,11 +61,39 @@ class _MapScreenState extends State<MapScreen> {
           var currentLocation = await location.getLocation();
           LatLng userLatLng =
           LatLng(currentLocation.latitude!, currentLocation.longitude!);
-          // Add code to get directions to destinationLatLng from userLatLng
-          // You can use a routing service like Google Directions API for this purpose.
+
+          // Calculate and display directions
+          String directions = await getDirections(
+              userLatLng,
+              LatLng(YOUR_DESTINATION_LAT, YOUR_DESTINATION_LNG),
+              GOOGLE_MAPS_API_KEY);
+
+          // Display the directions or handle them as needed
+          // For now, let's print the directions
+          print(directions);
         },
         child: Icon(Icons.directions_walk),
       ),
     );
+  }
+
+  Future<String> getDirections(
+      LatLng origin, LatLng destination, String apiKey) async {
+    final response = await http.get(
+      Uri.parse(
+        'https://maps.googleapis.com/maps/api/directions/json?'
+            'origin=${origin.latitude},${origin.longitude}&'
+            'destination=${destination.latitude},${destination.longitude}&'
+            'key=$apiKey',
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return 'Directions: ${data["routes"][0]["legs"][0]["steps"][0]["html_instructions"]}';
+      // You can extract and format the directions as needed from the response.
+    } else {
+      throw Exception('Failed to load directions');
+    }
   }
 }
